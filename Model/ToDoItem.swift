@@ -8,7 +8,7 @@
 
 import Foundation
 
-class ToDoItem {
+class ToDoItem : Codable {
     var toDoItemText : String = ""
     var toDoItemChecked : Bool = false
     
