@@ -7,25 +7,24 @@
 //
 
 import UIKit
+import CoreData
 
 class TodoListViewController: UITableViewController {
 
     let defaults = UserDefaults.standard
 
     var itemArray = [ToDoItem]()
+    
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
 
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("ToDoItems.plist")
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        print(dataFilePath!)
-        
+
+        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
+
+        // get initial ToDoItem's from store using default, empty request
         readToDoList()
-        
-        // Do any additional setup after loading the view, typically from a nib.
-        self.tableView.reloadData()
-        
     }
     
     //MARK - Tableview Datasource Methods
@@ -55,6 +54,10 @@ class TodoListViewController: UITableViewController {
 
             itemArray[indexPath.row].toDoItemChecked = !itemArray[indexPath.row].toDoItemChecked
 
+            // use these two lines to remove item from context and then removing item from array
+//            context.delete(itemArray[indexPath.row])
+//            itemArray.remove(at: indexPath.row)
+            
             saveToDoList()
             
             tableView.deselectRow(at: indexPath, animated: true)
@@ -69,9 +72,12 @@ class TodoListViewController: UITableViewController {
         let alert = UIAlertController(title: "Add New ToDo", message: "", preferredStyle: .alert)
         
         let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
-            //
-            let toDoItem = ToDoItem(toDoItemText: alertTextEntered.text!, toDoItemChecked: false)
-            self.itemArray.append(toDoItem)
+         
+            let newItem = ToDoItem(context: self.context)
+            newItem.toDoItemText = alertTextEntered.text
+            newItem.toDoItemChecked = false
+
+            self.itemArray.append(newItem)
 
             self.saveToDoList()
         }
@@ -85,29 +91,48 @@ class TodoListViewController: UITableViewController {
         present(alert, animated: true, completion: nil)
     }
 
-    func readToDoList() {
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            let decoder = PropertyListDecoder()
-            
-            do {
-                itemArray = try decoder.decode([ToDoItem].self, from: data)
-            }
-            catch {
-                print("Error decoding item array, \(error)")
-            }
-        }
-    }
-    func saveToDoList() {
-        let encoder = PropertyListEncoder()
-        
+    func readToDoList(with request: NSFetchRequest<ToDoItem> = ToDoItem.fetchRequest()) {
         do {
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+            itemArray = try context.fetch(request)
         }
         catch {
-            print("Error encoding item array, \(error)")
+            print("Error fetching data from context \(error)")
         }
         tableView.reloadData()
     }
+    
+    func saveToDoList() {
+        
+        do {
+            try context.save()
+        }
+        catch {
+            print("Error saving context \(error)")
+        }
+        tableView.reloadData()
+    }
+    
 }
 
+//MARK: - Search bar methods
+extension TodoListViewController : UISearchBarDelegate {
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        let request : NSFetchRequest<ToDoItem> = ToDoItem.fetchRequest()
+        
+        request.predicate = NSPredicate(format: "toDoItemText CONTAINS[cd] %@", searchBar.text!)
+        
+        request.sortDescriptors = [NSSortDescriptor(key: "toDoItemText", ascending: true)]
+
+        readToDoList(with: request)
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            readToDoList()
+            
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+        }
+    }
+}
