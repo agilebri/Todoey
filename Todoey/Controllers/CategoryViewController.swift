@@ -17,17 +17,11 @@ class CategoryViewController: UITableViewController {
         return try! Realm()
     }()
 
-    var notificationToken: NotificationToken?
-    
     var categoryArray : Results<Category>?
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
-//        notificationToken = realm.addNotificationBlock { [unowned self] note, realm in
-//            // TODO: you are going to need to update array
-//            readCategoryList()
-//        }
         readCategoryList()
     }
 
