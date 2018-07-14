@@ -13,6 +13,8 @@ class SwipeTableViewController: UITableViewController, SwipeTableViewCellDelegat
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        tableView.separatorStyle = .none
 
         // set the row height the same for all lists in the app
         tableView.rowHeight = 80
