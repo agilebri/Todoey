@@ -10,7 +10,7 @@ import UIKit
 import Realm
 import RealmSwift
 
-class CategoryViewController: UITableViewController {
+class CategoryViewController: SwipeTableViewController {
 
     // Need to lazy load to ensure that didFinishLaunchingWithOptions can perform the migration
     lazy var realm:Realm = {
@@ -30,19 +30,17 @@ class CategoryViewController: UITableViewController {
         return categoryArray?.count ?? 1
     }
     
-    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategoryCell", for: indexPath)
-        
-        cell.textLabel?.text = categoryArray?[indexPath.row].name ?? "No Categories Added Yet"
-        
-        print("Current row text = \(String(describing: categoryArray?[indexPath.row]))")
-        
-        return cell
-    }
-    
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         performSegue(withIdentifier: "goToItems", sender: self)
         
+    }
+    
+    override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
+        
+        cell.textLabel?.text = categoryArray?[indexPath.row].name ?? "No Categories Added Yet"
+        
+        return cell
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -96,7 +94,21 @@ class CategoryViewController: UITableViewController {
         
         present(alert, animated: true, completion: nil)
     }
- 
-    //MARK: - Tableview delegate methods
-
+    
+    override func updateModel(at indexPath: IndexPath) {
+        
+        super.updateModel(at: indexPath)
+        
+        if let category = self.categoryArray?[indexPath.row] {
+            do {
+                try self.realm.write {
+                    self.realm.delete(category)
+                }
+            }
+            catch {
+                print("Error deleting category, error = \(error)")
+            }
+        }
+    }
 }
+

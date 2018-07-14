@@ -9,10 +9,8 @@
 import UIKit
 import RealmSwift
 
-class TodoListViewController: UITableViewController {
+class TodoListViewController: SwipeTableViewController {
 
-    let defaults = UserDefaults.standard
-    
     // let's just keep the checking of to do items function to keep items on the list for now
     let deleteOnCheck = false
 
@@ -32,8 +30,6 @@ class TodoListViewController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-//        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
-
     }
     
     //MARK - Tableview Datasource Methods
@@ -43,8 +39,8 @@ class TodoListViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
  
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
-
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
+        
         if let item = allToDoItems?[indexPath.row] {
         
             cell.textLabel?.text = item.toDoItemText
@@ -68,22 +64,21 @@ class TodoListViewController: UITableViewController {
             if let item = allToDoItems?[indexPath.row] {
                 do {
                     try realm.write {
+                        // flip the item to opposite of current checked status
+                        item.toDoItemChecked = !item.toDoItemChecked
+
                         // decide if we are deleting the To Do item when checked, or just leaving it checked
                         if deleteOnCheck {
                             realm.delete(item)
                         }
-                        else {
-                            item.toDoItemChecked = !item.toDoItemChecked
-                        }
                     }
+                    tableView.reloadData()
                 }
                 catch {
                     print("Error deleting or updating item, error = \(error)")
                 }
             }
           
-            tableView.reloadData()
-            
             // turn off highlight at toggled row for better UX
             tableView.deselectRow(at: indexPath, animated: true)
         }
@@ -133,6 +128,21 @@ class TodoListViewController: UITableViewController {
         tableView.reloadData()
     }
     
+    override func updateModel(at indexPath: IndexPath) {
+        
+        super.updateModel(at: indexPath)
+        
+        if let toDoItem = self.allToDoItems?[indexPath.row] {
+            do {
+                try self.realm.write {
+                    self.realm.delete(toDoItem)
+                }
+            }
+            catch {
+                print("Error deleting item, error = \(error)")
+            }
+        }
+    }
 }
 
 //MARK: - Search bar methods
