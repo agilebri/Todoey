@@ -8,9 +8,12 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
 class TodoListViewController: SwipeTableViewController {
 
+
+    
     // let's just keep the checking of to do items function to keep items on the list for now
     let deleteOnCheck = false
 
@@ -18,10 +21,21 @@ class TodoListViewController: SwipeTableViewController {
     
     let realm = try! Realm()
     
+    var parentCategoryColor = UIColor()
+    
+    @IBOutlet weak var searchBar: UISearchBar!
+    
     var selectedCategory : Category? {
         didSet {
             
             self.title = selectedCategory?.name
+            
+            if let categoryColor = selectedCategory?.categoryBackground {
+                parentCategoryColor = UIColor(hexString: categoryColor)!
+            }
+            else {
+                parentCategoryColor = UIColor.flatGray
+            }
             
             readToDoList()
         }
@@ -29,7 +43,34 @@ class TodoListViewController: SwipeTableViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
+    }
+    
+    override func willMove(toParentViewController parent: UIViewController?) {
+        if let navBar = navigationController?.navigationBar {
+            
+            // make sure to change the nav bar back to some default color when coming back from to do item view
+            navBar.barTintColor = UIColor.flatSkyBlue
+            navBar.tintColor = .white
+        }
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        if let categoryColor = selectedCategory?.categoryBackground {
+            
+            guard let navBar = navigationController?.navigationBar else {
+                fatalError("Navigation controller does not exist")
+            }
+            
+            if let navBarColor = UIColor(hexString: categoryColor) {
+                navBar.barTintColor = navBarColor
+                navBar.tintColor = ContrastColorOf(navBarColor, returnFlat: true)
+                navBar.largeTitleTextAttributes = [NSAttributedStringKey.foregroundColor : ContrastColorOf(navBarColor, returnFlat: true)]
+                
+                searchBar.isTranslucent = false
+                searchBar.barTintColor = navBarColor
+                searchBar.tintColor = navBarColor
+            }
+        }
     }
     
     //MARK - Tableview Datasource Methods
@@ -44,6 +85,12 @@ class TodoListViewController: SwipeTableViewController {
         if let item = allToDoItems?[indexPath.row] {
         
             cell.textLabel?.text = item.toDoItemText
+            
+            if let itemColor = parentCategoryColor.darken(byPercentage: CGFloat(indexPath.row) / CGFloat(allToDoItems!.count)) {
+                cell.backgroundColor = itemColor
+                cell.textLabel?.textColor = ContrastColorOf(itemColor, returnFlat: true)
+                cell.tintColor = ContrastColorOf(itemColor, returnFlat: true)
+            }
         
             // Ternary operator
             cell.accessoryType = item.toDoItemChecked ? .checkmark : .none

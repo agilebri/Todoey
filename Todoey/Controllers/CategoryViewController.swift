@@ -26,6 +26,16 @@ class CategoryViewController: SwipeTableViewController {
 
         readCategoryList()
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        if let navBar = navigationController?.navigationBar {
+            
+            // make sure to change the nav bar back to some default color when coming back from to do item view
+            navBar.barTintColor = UIColor.flatSkyBlue
+            navBar.tintColor = .white
+        }
+        tableView.reloadData()
+    }
 
     //MARK: - Tableview data source methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -41,9 +51,10 @@ class CategoryViewController: SwipeTableViewController {
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
         cell.textLabel?.text = categoryArray?[indexPath.row].name ?? "No Categories Added Yet"
-        
         cell.backgroundColor = UIColor(hexString: (categoryArray?[indexPath.row].categoryBackground)!)
+        cell.textLabel?.textColor = ContrastColorOf(cell.backgroundColor!, returnFlat: true)
 
+        print("For \(String(describing: cell.textLabel?.text)), color = \(String(describing: cell.backgroundColor?.hexValue())), text color = \(cell.textLabel?.textColor)")
         return cell
     }
     
